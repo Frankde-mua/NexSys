@@ -16,6 +16,7 @@ import Login from "./components/Auth/Login";
 import Loader from "./components/Utlies/Loader";
 import Email from "./components/Mailing";
 import Billing from "./components/Billing";
+import Email from "./components/MailBox.jsx";
 import Calendar from "./components/Calendar";
 import ClientGrid from "./components/Customers";
 import renderInventory from "./components/Inventory";
@@ -86,7 +87,7 @@ export default function App() {
     ],
     admin: [
       ["dashboard", "Dashboard"],
-      ["users", "Users"],
+      ["users", "eMail"],
       ["calendar", "Calendar"],
       ["billing", "Billing"],
       ["inventory", "Inventory"],
@@ -276,11 +277,22 @@ export default function App() {
 
           {currentPage === "users" && role !== "user" && (
             <div>
+<<<<<<< HEAD
             <header className="mb-4">
         <h2 className="text-xl font-semibold mb-4">Manage Users</h2>
           </header>
             <div className="p-6 bg-white rounded-2xl shadow-sm">
               <p>Admins and Superadmins can view or create new users here.</p>
+=======
+              <header className="mb-4">
+                <h1 className="text-2xl font-semibold">MailBox</h1>
+                <p className="text-sm text-slate-600">Send and receive mails.</p>
+              </header>
+              <br />
+            <div className="p-6 bg-white pt-3 rounded-2xl shadow-sm w-[1250px] h-[560px] max-w-full mx-auto">
+              <Email />
+            </div>
+>>>>>>> Dev
             </div>
                 <Email/>
             </div>

@@ -48,7 +48,7 @@ const Expenditure = () => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/expense-categories/${companyName}`,
+          `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/expense-categories/${companyName}`,
           { headers: { "ngrok-skip-browser-warning": "true" } }
         );
         if (res.data.success) setCategories(res.data.categories);
@@ -64,7 +64,7 @@ const Expenditure = () => {
     if (!companyName) return;
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/expenditures/${companyName}`
+        `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/expenditures/${companyName}`
       );
       if (res.data.success){
         const dbExpenses = res.data.expenditures.map((e) => ({
@@ -150,7 +150,7 @@ const Expenditure = () => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 2500));
       const res = await axios.post(
-        `http://localhost:5000/api/expenditures/${companyName}`,
+        `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/expenditures/${companyName}`,
         {
           ...form,
           amount: parseFloat(form.amount),

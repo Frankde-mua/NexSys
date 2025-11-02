@@ -14,10 +14,13 @@
     "ag-grid-react": "^34.2.0",
     "axios": "^1.12.2",
     "framer-motion": "^7.6.6",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.545.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "recharts": "^2.5.0"
+    "recharts": "^2.5.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "vite": "^5.0.0"

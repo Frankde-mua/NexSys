@@ -15,7 +15,7 @@ const AttachDocuments = () => {
 
   return (
     <div className="bg-gray-50 p-4 rounded-xl shadow-sm mt-6">
-      <h2 className="text-sm font-semibold mb-4 text-slate-700">Attach Client Documents</h2>
+      <h2 className="text-sm font-semibold mb-4 text-slate-700">Client Documents</h2>
       <input
         type="file"
         multiple
@@ -219,7 +219,7 @@ const ETransact = () => {
 
   return (
     <div className="p-6 bg-white rounded-2xl shadow-lg mt-6 relative">
-      <h2 className="text-2xl font-semibold text-slate-800 mb-6">💳 E-Transact</h2>
+      <h2 className="text-2xl font-semibold text-slate-800 mb-6">🖨️ E-Transact</h2>
 
       {/* Client Section */}
       <div className="bg-gray-50 p-4 rounded-xl shadow-sm">

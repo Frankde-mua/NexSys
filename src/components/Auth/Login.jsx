@@ -15,7 +15,11 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+<<<<<<< HEAD
     //https://franklin-unsprinkled-corrie.ngrok-free.dev  - switched to localhost for development
+=======
+    //https://franklin-unsprinkled-corrie.ngrok-free.dev  http://localhost:5000 - switched to localhost for development
+>>>>>>> Dev
     try {
       const res = await axios.post(
         "http://localhost:5000/api/login",
