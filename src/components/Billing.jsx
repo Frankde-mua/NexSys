@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import FinancialEnquiries from "./Utlies/Enquiries";
 import Payment from "./Utlies/Payment";
 import Invoice from "./Utlies/Invoice";
+import Quote from "./Utlies/Quote"
+import CreditNote from "./Utlies/CreditNote";
 import ETransact from "./Utlies/ETransact";
 
 const SemiNavbar = () => {
-  const tabs = ["Enquiries", "Payment", "Invoice", "Credit Note", "Quote", "E-Transact"];
-  const [activeTab, setActiveTab] = useState("Enquiries");
+  const tabs = [ "Invoice", "Payment", "Credit Note", "Enquiries", "Quote", "E-Transact"];
+  const [activeTab, setActiveTab] = useState("Invoice");
 
   return (
     <div>
@@ -16,7 +18,7 @@ const SemiNavbar = () => {
           <p className="text-sm text-slate-600">Financial works.</p>
         </div>
         </header>
-    <nav className=" px-3 rounded-xl shadow-sm w-full max-w-full overflow-x-auto">
+    <nav className=" px-3 py-1 rounded-xl shadow-sm w-full max-w-full overflow-x-auto">
       <ul className="flex space-x-4">
         {tabs.map((tab, idx) => (
           <li key={tab} className="flex items-center">
@@ -39,10 +41,12 @@ const SemiNavbar = () => {
       </ul>
     </nav>
     <div className="mt-6">
-    {activeTab === "Enquiries" && <FinancialEnquiries />}
-    {activeTab === "Payment" && <Payment />}
     {activeTab === "Invoice" && <Invoice />}
+    {activeTab === "Payment" && <Payment />}
+    {activeTab === "Enquiries" && <FinancialEnquiries />}
     {activeTab === "E-Transact" && <ETransact />}
+    {activeTab === "Quote" && <Quote />}
+    {activeTab === "Credit Note" && <CreditNote />}
     </div>
     </div>
   );

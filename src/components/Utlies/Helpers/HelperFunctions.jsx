@@ -11,7 +11,7 @@ export const getAllStatus = async () => {
   const companyName = getCompanyName();
   //https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}
   try {
-    const res = await axios.get(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}`,
+    const res = await axios.get(`http://localhost:5000/api/status/${companyName}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
     return res.data.statuses || [];
@@ -26,7 +26,7 @@ export const getAllAgendas = async () => {
   const companyName = getCompanyName();
   //https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}
   try {
-    const res = await axios.get(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}`,
+    const res = await axios.get(`http://localhost:5000/api/calendar/${companyName}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
 
@@ -55,7 +55,7 @@ export const saveNewStatus = async (newStatus, setStatuses, setLoading) => {
     if (!newStatus.trim()) return alert("Enter a status description");
     setLoading(true);
     try {
-      const res = await axios.post(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}`,
+      const res = await axios.post(`http://localhost:5000/api/status/${companyName}`,
         { status_desc: newStatus },
         { headers: { "ngrok-skip-browser-warning": "true" } }
       );
@@ -84,7 +84,7 @@ export const saveNewAgenda = async (
   setLoading(true);
   // `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}
   try {
-    const res = await axios.post(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}`,
+    const res = await axios.post(`http://localhost:5000/api/calendar/${companyName}`,
       {
         agenda: newAgenda.title,
         time: newAgenda.time,
@@ -143,7 +143,7 @@ export const updateAgenda = async (
     const { client, client_id, ...agendaData } = newAgenda;
 
     const res = await axios.put(
-      `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}/${editingEventId}`,
+      `http://localhost:5000/api/calendar/${companyName}/${editingEventId}`,
       { ...agendaData, date: agendaDate }
     );
     if (res.data.success) {
@@ -176,7 +176,7 @@ export const deleteStatus = async (statusId, statusDesc, setStatuses) => {
   const companyName = getCompanyName();
   try {
     const res = await axios.delete(
-      `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}/${statusId}`,
+      `http://localhost:5000/api/status/${companyName}/${statusId}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
 
@@ -198,7 +198,7 @@ export const deleteAgenda = async (id, setEvents) => {
 
   try {
     await axios.delete(
-      `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}/${id}`,
+      `http://localhost:5000/api/calendar/${companyName}/${id}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
     setEvents((ev) => ev.filter((e) => e.id !== id));
