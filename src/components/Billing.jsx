@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FinancialEnquiries from "./Utlies/Enquiries";
 import Payment from "./Utlies/Payment";
 import Invoice from "./Utlies/Invoice";
@@ -9,35 +9,6 @@ import ETransact from "./Utlies/ETransact";
 const SemiNavbar = () => {
   const tabs = [ "Invoice", "Payment", "Credit Note", "Enquiries", "Quote", "E-Transact"];
   const [activeTab, setActiveTab] = useState("Invoice");
-
-  const selectTariffToRow = (tariff) => {
-    if (!tariffModalTargetRowId) return;
-    updateRow(tariffModalTargetRowId, {
-      tariff: tariff.desc,
-      tariffCode: tariff.code,
-      fee: tariff.fee,
-    });
-    setShowTariffModal(false);
-    setTariffModalTargetRowId(null);
-  };
-
-  const handleSave = () => {
-    console.log("Saving billing data:", billingRows);
-    alert("Billing data saved successfully!");
-  };
-
-  const handleConvertQuote = () => {
-    alert("Quote converted successfully!");
-  };
-
-  // ========== TOTALS ==========
-  const totalBilling = billingRows.reduce((sum, r) => {
-    const discountAmount = (r.fee * (Number(r.discount || 0))) / 100;
-    const discountedPrice = r.fee - discountAmount;
-    return sum + discountedPrice * (r.qty || 1);
-  }, 0);
-
-  const totalVAt = totalBilling * 0.15; // 15% VAT
 
   // ========== EFFECTS ==========
   useEffect(() => {
