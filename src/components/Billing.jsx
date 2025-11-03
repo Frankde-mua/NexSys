@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import FinancialEnquiries from "./Utlies/Enquiries";
 import Payment from "./Utlies/Payment";
 import Invoice from "./Utlies/Invoice";
@@ -10,18 +10,10 @@ const SemiNavbar = () => {
   const tabs = [ "Invoice", "Payment", "Credit Note", "Enquiries", "Quote", "E-Transact"];
   const [activeTab, setActiveTab] = useState("Invoice");
 
-  // ========== EFFECTS ==========
-  useEffect(() => {
-    const savedData = localStorage.getItem("userData");
-    if (savedData) setUserData(JSON.parse(savedData));
-  }, []);
-
-  // ========== RENDER ==========
   return (
-    <div className="h-screen overflow-hidden flex flex-col">
-      {/* HEADER */}
+    <div>
       <header className="flex items-center justify-between mb-6">
-        <div>
+      <div>
           <h1 className="text-2xl font-semibold">Billing</h1>
           <p className="text-sm text-slate-600">Financial works.</p>
         </div>
