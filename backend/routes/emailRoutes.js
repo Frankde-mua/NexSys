@@ -2,7 +2,7 @@ import express from "express";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { getCompanyPool } from "../db.js";
-import { fetchInbox, fetchSent, checkEmailStatus } from "../controller/emailController.js";
+import { fetchInbox, fetchSent, checkEmailStatus } from "../controllers/emailController.js";
 const router = express.Router();
 
 // ------------------------------

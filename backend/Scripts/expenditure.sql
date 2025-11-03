@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS expenditure (
     id SERIAL PRIMARY KEY,
     date DATE NOT NULL,
-    supplier VARCHAR(255),
+    Counterparty VARCHAR(255),
     category VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
     amount NUMERIC(12,2) NOT NULL,

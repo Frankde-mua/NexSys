@@ -1,0 +1,22 @@
+import express from "express";
+import { getCompanyPool } from "../db.js";
+import {
+  createTransaction,
+  getTransactionsByType,
+} from "../controllers/transactionController.js";
+
+const router = express.Router();
+
+router.post("/:company", async (req, res) => {
+  const { company } = req.params;
+  const pool = getCompanyPool(company);
+  await createTransaction("CRN", req, res, pool);
+});
+
+router.get("/:company", async (req, res) => {
+  const { company } = req.params;
+  const pool = getCompanyPool(company);
+  await getTransactionsByType("CRN", req, res, pool);
+});
+
+export default router;
