@@ -18,7 +18,7 @@ const Login = ({ onLogin }) => {
     //https://franklin-unsprinkled-corrie.ngrok-free.dev  http://localhost:5000 - switched to localhost for development
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/login",
+        "https://franklin-unsprinkled-corrie.ngrok-free.dev/api/login",
         form
       );
 

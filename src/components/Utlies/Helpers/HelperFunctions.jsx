@@ -11,12 +11,43 @@ export const getAllStatus = async () => {
   const companyName = getCompanyName();
   //https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}
   try {
-    const res = await axios.get(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}`,
+    const res = await axios.get(`http://localhost:5000/api/status/${companyName}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
     return res.data.statuses || [];
   } catch (err) {
     console.error("Error fetching statuses:", err);
+    return [];
+  }
+};
+
+// --- Fetch all clients ---
+export const getAllClients = async () => {
+  const companyName = getCompanyName();
+  //https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}
+  try {
+    const res = await axios.get(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/patients/${companyName}`,
+      { headers: { "ngrok-skip-browser-warning": "true" } }
+    );
+    const dbClients = res.data.patients.map((e) => ({
+      id: e.id,
+      name: e.name,
+      surname: e.surname, 
+      type: e.type || "Med Aid",
+      cell: e.phone,
+      email: e.email,
+      address: e.address,
+      banking: e.bank || {
+      bank: "FNB",
+      accountNumber: e.accountno,
+      branchCode: "250655"
+    }
+    }));
+
+
+    return dbClients || [];
+  } catch (err) {
+    console.error("Error fetching patients:", err);
     return [];
   }
 };
@@ -206,3 +237,33 @@ export const deleteAgenda = async (id, setEvents) => {
     console.error(err);
   }
 };
+
+export const saveInvoice = async (company, selectedClient, billingRows, userData) => {
+  if (!selectedClient) throw new Error("Please select a patient before saving the invoice.");
+  if (!billingRows || billingRows.length === 0) throw new Error("No billing lines to save.");
+
+  const payload = {
+    patient_id: selectedClient.id,
+    account_id: selectedClient.account_id || null,
+    practitioner_id: selectedClient.practitioner_id || null,
+    transaction_type_id: 1, // 1 = Invoice, from transaction_types table
+
+    billingRows: billingRows.map((r) => ({
+      tariff_id: r.tariff_id || r.optom_tariff_id || r.medical_tariff_id || null,
+      narrative: r.narrative || r.tariff || "",
+      qty: Number(r.qty) || 1,
+      fee: Number(r.fee) || 0,
+      discount: Number(r.discount) || 0,
+      patient_portion: Number(r.patient_portion) || 0,
+      medical_portion: Number(r.medical_portion) || 0,
+      debit: Number(r.fee) || 0,
+      credit: 0,
+      balance: 0, // optional but safer
+      date: new Date(),
+    })),
+  };
+
+  const res = await axios.post(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/invoices/${company}`, payload);
+  return res.data; // { success: true, document_number: 'INV-00012' }
+};
+

@@ -1,373 +1,232 @@
 import React, { useState, useEffect } from "react";
-import ClientList from "./ClientList";
-import QouteConvert from "./Modals/QouteConversionModal";
 
-const BILLING_SERVICES = [
-  { id: 1, name: "Website Hosting", price: 150 },
-  { id: 2, name: "SEO Optimization", price: 300 },
-  { id: 3, name: "Email Marketing", price: 200 },
-  { id: 4, name: "Social Media Management", price: 400 },
-];
+// 🧩 Section Components
+import ClientDetails from "../sections/ClientDetails";
+import PrescriptionForm from "../sections/PrescriptionForm";
+import ManualAddSection from "../sections/ManualAddSection";
+import TariffGrid from "../sections/TariffGrid";
+import BillingSummary from "../sections/BillingSummary";
+import QuickServiceSection from "../Utlies/QuickServiceSection";
 
-const Invoice = () => {
-  const [selectedServices, setSelectedServices] = useState([]);
+// 🪟 Modal Components
+import TariffWizardModal from "../BillingModal/TariffWizardModal";
+import ClientModal from "../BillingModal/ClientModal";
+import RateModal from "../BillingModal/RateModal";
+import SalesModal from "../BillingModal/SalesModal";
+import DocumentModal from "../BillingModal/DocumentModal";
+
+// ⚙️ Utils
+import { saveInvoice } from "./Helpers/HelperFunctions";
+import { BILLING_SERVICES, DUMMY_TARIFFS, blankRow } from "../utils/billingUtils";
+
+export default function Invoice({ mode = "invoice", onSave, initialData }) {
+  const isQuoteMode = mode === "quote";
+
+  // ===== STATE =====
+  const [selectedClient, setSelectedClient] = useState(initialData?.client || null);
+  const [showClients, setShowClients] = useState(false);
+  const [showDocument, setShowDocument] = useState(false);
+  const [showTariffModal, setShowTariffModal] = useState(false);
+  const [tariffModalTargetRowId, setTariffModalTargetRowId] = useState(null);
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [showSalesModal, setShowSalesModal] = useState(false);
+
+  const [billingRows, setBillingRows] = useState(initialData?.rows || [blankRow()]);
   const [manualService, setManualService] = useState("");
   const [discountService, setDiscountService] = useState("");
   const [manualPrice, setManualPrice] = useState("");
-  const [manualList, setManualList] = useState([]);
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [showClients, setShowClients] = useState(false);
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [showQouteConvert, setShowQouteConvert] = useState(false);
 
+  const [userData, setUserData] = useState({
+    logo: null,
+    company: "Your Company",
+    email: "info@example.com",
+  });
 
+  const [prescription, setPrescription] = useState({
+    right: { sphere: 0, cyl: 0, axis: 0, add: 0 },
+    left: { sphere: 0, cyl: 0, axis: 0, add: 0 },
+  });
 
+  const [icd10Codes, setIcd10Codes] = useState([]);
 
-  // 🧠 Load selected client from localStorage when modal closes
+  // ===== LOGIC =====
+  const addRow = () => setBillingRows((prev) => [...prev, blankRow()]);
+  const updateRow = (id, updates) =>
+    setBillingRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+  const clearTable = () => setBillingRows([blankRow()]);
+
+  const handleAddManual = () => {
+    if (!manualService || !manualPrice) return;
+    setBillingRows((prev) => [
+      ...prev,
+      { ...blankRow(), tariff: manualService, fee: Number(manualPrice), discount: Number(discountService) },
+    ]);
+    setManualService("");
+    setManualPrice("");
+    setDiscountService("");
+  };
+
   const handleSelectClient = (client) => {
     setSelectedClient(client);
     setShowClients(false);
-    localStorage.setItem("selectedClient", JSON.stringify(client));
   };
+
+  const selectTariffToRow = (tariff) => {
+    if (!tariffModalTargetRowId) return;
+    updateRow(tariffModalTargetRowId, {
+      tariff: tariff.desc,
+      tariffCode: tariff.code,
+      fee: tariff.fee,
+    });
+    setShowTariffModal(false);
+    setTariffModalTargetRowId(null);
+  };
+
+  const handleSave = () => {
+    const data = { client: selectedClient, rows: billingRows, totalBilling, totalVAt, mode };
+    if (onSave) onSave(data);
+    alert(`${isQuoteMode ? "Quote" : "Invoice"} saved successfully!`);
+  };
+
+const generateInvoice = async () => {
+  try {
+    const res = await saveInvoice(userData.company, selectedClient, billingRows, userData);
+
+    if (res.success && res.document_number) {
+      alert(`Invoice ${res.document_number} saved successfully!`);
+      setShowDocument(true); // ✅ open modal only if invoice is saved
+    } else {
+      alert("Failed to save invoice.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Failed to save invoice.");
+  }
+};
+
+
+  const handleConvertQuote = () => {
+    alert("Quote converted to invoice successfully!");
+  };
+
+  const totalBilling = billingRows.reduce((sum, r) => {
+    const discountAmount = (r.fee * (Number(r.discount) || 0)) / 100;
+    const discountedPrice = r.fee - discountAmount;
+    return sum + discountedPrice * (r.qty || 1);
+  }, 0);
+
+  const totalVAt = totalBilling * 0.15;
 
   useEffect(() => {
-    const client = JSON.parse(localStorage.getItem("selectedClient"));
-    if (client) setSelectedClient(client);
-  }, [showClients]);
+    const savedData = localStorage.getItem("userData");
+    if (savedData) setUserData(JSON.parse(savedData));
+  }, []);
 
-  const toggleService = (id) => {
-    setSelectedServices((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-  };
-
-  // 💰 Calculate totals
-  const totalBilling =
-    selectedServices.reduce((sum, id) => {
-      const svc = BILLING_SERVICES.find((s) => s.id === id);
-      return sum + (svc ? svc.price : 0);
-    }, 0) +
-    manualList.reduce((sum, m) => {
-      const discountAmount = (m.price * (Number(m.discount) || 0)) / 100;
-      return sum + (m.price - discountAmount);
-    }, 0);
-
-  const totalVAT = totalBilling * 0.15;
-
-  // ➕ Add manual service with discount
-  const handleAddManual = () => {
-    if (!manualService || !manualPrice) return;
-    setManualList([
-      ...manualList,
-      {
-        name: manualService,
-        discount: discountService ? Number(discountService) : 0,
-        price: Number(manualPrice),
-      },
-    ]);
-    setDiscountService("");
-    setManualService("");
-    setManualPrice("");
-  };
-
-  const userData = JSON.parse(localStorage.getItem("userProfile") || "{}");
-
+  // ===== RENDER =====
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-lg mt-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold text-slate-800 mb-6">🧾 Invoice</h2>
-        <button className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
-          onClick={() => setShowQouteConvert(true)}
-        >
-          Convert Qoute
-        </button>
-      </div>
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="overflow-y-auto pr-2 pb-10">
+        <div className="bg-white p-6 rounded-2xl shadow-lg space-y-6">
+          {/* Header */}
+          <header className="mb-4">
+            <h1 className="text-2xl font-semibold text-slate-800 mb-1">
+              {isQuoteMode ? "💬 Quote" : "🧾 Invoice"}
+            </h1>
+          </header>
 
-      <div className="space-y-6">
-        {/* Quick Services */}
-        <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
-          <h2 className="text-sm font-semibold mb-4 text-slate-700">
-            Quick Service Selection
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {BILLING_SERVICES.map((s) => (
-              <div
-                key={s.id}
-                onClick={() => toggleService(s.id)}
-                className={`p-3 rounded-lg border cursor-pointer transition ${selectedServices.includes(s.id)
-                    ? "border-indigo-400 bg-indigo-50"
-                    : "border-slate-200 hover:bg-slate-100"
-                  }`}
-              >
-                <div className="font-medium text-sm">{s.name}</div>
-                <div className="text-xs text-slate-500">R{s.price}.00</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Client Search */}
-        <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
-          <h2 className="text-sm font-semibold mb-4 text-slate-700">Client Details</h2>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              placeholder="First Name"
-              value={selectedClient?.name || ""}
-              className="border rounded-lg p-2 flex-1 text-sm bg-white"
-              disabled
+          {/* Quick Services */}
+          <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
+            <QuickServiceSection
+              BILLING_SERVICES={BILLING_SERVICES}
+              billingRows={billingRows}
+              setBillingRows={setBillingRows}
             />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={selectedClient?.surname || ""}
-              className="border rounded-lg p-2 flex-1 text-sm bg-white"
-              disabled
-            />
-            <input
-              type="text"
-              placeholder="Email"
-              value={selectedClient?.email || ""}
-              className="border rounded-lg p-2 flex-1 text-sm bg-white"
-              disabled
-            />
-            <button
-              onClick={() => setShowClients(true)}
-              className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700"
-            >
-              {selectedClient ? "Change" : "Search"}
-            </button>
           </div>
 
-          {selectedClient && (
-            <div className="mt-3 text-xs text-slate-600 space-y-1">
-              <p><strong>Cell:</strong> {selectedClient.cell}</p>
-              <p><strong>Type:</strong> {selectedClient.type}</p>
-              <p><strong>Address:</strong> {selectedClient.address}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Manual Add */}
-        <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
-          <h2 className="text-sm font-semibold mb-4 text-slate-700">
-            Manual Service Entry
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              placeholder="Service Name"
-              value={manualService}
-              onChange={(e) => setManualService(e.target.value)}
-              className="border rounded-lg p-2 flex-1 text-sm bg-white"
-            />
-            <input
-              type="number"
-              placeholder="Discount in %"
-              value={discountService}
-              onChange={(e) => setDiscountService(e.target.value)}
-              className="border rounded-lg p-2 w-32 text-sm bg-white"
-            />
-            <input
-              type="number"
-              placeholder="Price (R)"
-              value={manualPrice}
-              onChange={(e) => setManualPrice(e.target.value)}
-              className="border rounded-lg p-2 w-32 text-sm bg-white"
-            />
-            <button
-              onClick={handleAddManual}
-              className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700"
-            >
-              Add
-            </button>
+          {/* Client Details */}
+          <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
+            <ClientDetails selectedClient={selectedClient} setShowClients={setShowClients} />
           </div>
-        </div>
 
-        {/* Billing Summary */}
-        <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
-          <h2 className="text-sm font-semibold mb-4 text-slate-700">Billing Summary</h2>
-          {selectedServices.length === 0 && manualList.length === 0 ? (
-            <p className="text-sm text-slate-500">No services selected.</p>
-          ) : (
-            <table className="w-full text-sm border-t">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Service</th>
-                  <th className="py-2">Discount</th>
-                  <th className="py-2">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedServices.map((id) => {
-                  const s = BILLING_SERVICES.find((x) => x.id === id);
-                  return (
-                    <tr key={s.id} className="border-b">
-                      <td className="py-2">{s.name}</td>
-                      <td className="py-2 text-slate-500">—</td>
-                      <td className="py-2">R{s.price}.00</td>
-                    </tr>
-                  );
-                })}
+          {/* Prescription */}
+          <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
+            <PrescriptionForm
+              prescription={prescription}
+              setPrescription={setPrescription}
+              setIcd10Codes={setIcd10Codes}
+            />
+          </div>
 
-                {manualList.map((m, idx) => {
-                  const discount = Number(m.discount) || 0;
-                  const discountAmount = (m.price * discount) / 100;
-                  const discountedPrice = m.price - discountAmount;
-                  return (
-                    <tr key={idx} className="border-b">
-                      <td className="py-2">{m.name}</td>
-                      <td className="py-2">{discount > 0 ? `${discount}%` : "—"}</td>
-                      <td className="py-2">
-                        {discount > 0 ? (
-                          <>
-                            <span className="text-green-600 font-medium">
-                              R{discountedPrice.toFixed(2)}
-                            </span>
-                            <span className="ml-2 text-slate-400 line-through text-xs">
-                              R{m.price.toFixed(2)}
-                            </span>
-                          </>
-                        ) : (
-                          <>R{m.price.toFixed(2)}</>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+          {/* Manual Add */}
+          <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
+            <ManualAddSection
+              manualService={manualService}
+              discountService={discountService}
+              manualPrice={manualPrice}
+              setManualService={setManualService}
+              setDiscountService={setDiscountService}
+              setManualPrice={setManualPrice}
+              handleAddManual={handleAddManual}
+            />
+          </div>
 
-                <tr>
-                  <td className="py-2 font-medium">VAT</td>
-                  <td></td>
-                  <td className="py-2 font-semibold">R{totalVAT.toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 font-medium">Total</td>
-                  <td></td>
-                  <td className="py-2 font-semibold">R{totalBilling.toFixed(2)}</td>
-                </tr>
-              </tbody>
-            </table>
-          )}
-          <button
-            onClick={() => setShowInvoice(true)}
-            className="bg-indigo-600 text-white text-sm px-4 py-2 mt-4 rounded-lg shadow hover:bg-indigo-700"
-          >
-            Generate Invoice
-          </button>
+          {/* Tariff Table */}
+          <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
+            <TariffGrid
+              billingRows={billingRows}
+              updateRow={updateRow}
+              addRow={addRow}
+              clearTable={clearTable}
+              handleSave={handleSave}
+              handleConvertQuote={handleConvertQuote}
+              setTariffModalTargetRowId={setTariffModalTargetRowId}
+              setShowTariffModal={setShowTariffModal}
+              isQuoteMode={isQuoteMode}
+            />
+          </div>
+
+          {/* Totals */}
+          <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
+            <BillingSummary
+              billingRows={billingRows}
+              selectedClient={selectedClient}
+              userData={userData}
+              totalVAt={totalVAt}
+              totalBilling={totalBilling}
+              generateInvoice={generateInvoice}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Invoice Modal */}
-      {showInvoice && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-lg relative">
-            <button
-              onClick={() => setShowInvoice(false)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
-            >
-              ✕
-            </button>
-            <div className="text-center mb-4">
-              {userData.logo ? (
-                <img
-                  src={userData.logo}
-                  alt="Logo"
-                  className="w-16 h-16 mx-auto rounded-full mb-2"
-                />
-              ) : (
-                <div className="w-16 h-16 mx-auto rounded-full bg-gray-200 mb-2" />
-              )}
-              <h2 className="text-xl font-semibold">
-                {userData.company || "Your Company"}
-              </h2>
-              <p className="text-sm text-slate-500">
-                {userData.email || "email@example.com"}
-              </p>
-              <p className="text-sm text-slate-500 font-medium">Tax Invoice</p>
-            </div>
+      {/* === MODALS === */}
+      {showClients && <ClientModal showClients={showClients} handleSelectClient={handleSelectClient} />}
 
-            <div className="text-xs text-slate-600 space-y-1">
-              <p><strong>Name:</strong> {selectedClient?.name}</p>
-              <p><strong>Surname:</strong> {selectedClient?.surname}</p>
-              <p><strong>Cell:</strong> {selectedClient?.cell}</p>
-              <p><strong>Type:</strong> {selectedClient?.type}</p>
-              <p><strong>Address:</strong> {selectedClient?.address}</p>
-            </div>
-
-            <table className="w-full text-sm border-t mt-4">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Service</th>
-                  <th className="py-2">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedServices.map((id) => {
-                  const s = BILLING_SERVICES.find((x) => x.id === id);
-                  return (
-                    <tr key={s.id} className="border-b">
-                      <td className="py-2">{s.name}</td>
-                      <td className="py-2">R{s.price.toFixed(2)}</td>
-                    </tr>
-                  );
-                })}
-                {manualList.map((m, idx) => {
-                  const discountAmount = (m.price * (Number(m.discount) || 0)) / 100;
-                  const discountedPrice = m.price - discountAmount;
-                  return (
-                    <tr key={idx} className="border-b">
-                      <td className="py-2">
-                        {m.name} {m.discount ? `(${m.discount}% off)` : ""}
-                      </td>
-                      <td className="py-2">R{discountedPrice.toFixed(2)}</td>
-                    </tr>
-                  );
-                })}
-                <tr>
-                  <td className="py-2 font-medium">VAT</td>
-                  <td className="py-2 font-semibold">R{totalVAT.toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 font-medium">Total</td>
-                  <td className="py-2 font-semibold">R{totalBilling.toFixed(2)}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={() => window.print()}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700"
-              >
-                Print / Save PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Client Modal */}
-      {showClients && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-6 shadow-lg text-center w-full max-w-4xl">
-            <h2 className="text-xl font-bold mb-4">Client List</h2>
-            <ClientList onSelect={handleSelectClient} />
-          </div>
-        </div>
-      )}
-
-      {/* Qoute Modal */}
-      {showQouteConvert && (
-        <QouteConvert
-          onClose={() => setShowQouteConvert(false)}
-          client={selectedClient}
-          onConvert={(quote) => handleQuoteConvert(quote)}
+      {showTariffModal && (
+        <TariffWizardModal
+          setShowTariffModal={setShowTariffModal}
+          selectTariffToRow={selectTariffToRow}
+          DUMMY_TARIFFS={DUMMY_TARIFFS}
         />
       )}
 
+      {showDocument && (
+        <DocumentModal
+          type={isQuoteMode ? "quote" : "invoice"}
+          show={showDocument}
+          onClose={() => setShowDocument(false)}
+          billingRows={billingRows}
+          selectedClient={{ ...selectedClient, prescription }}
+          userData={userData}
+          totalVAt={totalVAt}
+          totalBilling={totalBilling}
+          icd10Codes={icd10Codes}
+          className={isQuoteMode ? "max-w-4xl max-h-[85vh] overflow-y-auto" : ""}
+        />
+      )}
+
+      {showRateModal && <RateModal show={showRateModal} onClose={() => setShowRateModal(false)} />}
+      {showSalesModal && <SalesModal show={showSalesModal} onClose={() => setShowSalesModal(false)} />}
     </div>
   );
-};
-
-export default Invoice;
+}
