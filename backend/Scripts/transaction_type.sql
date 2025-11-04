@@ -57,6 +57,12 @@ CREATE TABLE accounts (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE account_patients (
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+    patient_id INTEGER REFERENCES patients(id) ON DELETE CASCADE,
+    PRIMARY KEY (account_id, patient_id)
+);
+
 CREATE SEQUENCE account_number_seq START 1;
 CREATE OR REPLACE FUNCTION generate_account_number()
 RETURNS TRIGGER AS $$
@@ -79,6 +85,48 @@ CREATE TRIGGER trg_generate_account_number
 BEFORE INSERT ON accounts
 FOR EACH ROW
 EXECUTE FUNCTION generate_account_number();
+
+CREATE OR REPLACE FUNCTION link_or_create_account_by_medical_aid()
+RETURNS TRIGGER AS $$
+DECLARE
+    existing_account_id INTEGER;
+    new_account_number VARCHAR(10);
+BEGIN
+    -- 1️⃣ Try to find existing account for the same medical aid number
+    IF NEW.medical_aid_no IS NOT NULL THEN
+        SELECT a.id INTO existing_account_id
+        FROM accounts a
+        JOIN account_patients ap ON ap.account_id = a.id
+        JOIN patients p ON p.id = ap.patient_id
+        WHERE p.medical_aid_no = NEW.medical_aid_no
+        LIMIT 1;
+    END IF;
+
+    -- 2️⃣ If found, link new patient to that account
+    IF existing_account_id IS NOT NULL THEN
+        INSERT INTO account_patients (account_id, patient_id)
+        VALUES (existing_account_id, NEW.id);
+        RAISE NOTICE 'Linked patient % (%) to existing account % (via medical aid no %)',
+            NEW.first_name, NEW.id, existing_account_id, NEW.medical_aid_no;
+
+    -- 3️⃣ Otherwise, create a new account and link it
+    ELSE
+        new_account_number := 'ACC' || LPAD(NEXTVAL('patient_key_seq')::TEXT, 5, '0');
+
+        INSERT INTO accounts (patient_id, account_number, current_balance)
+        VALUES (NEW.id, new_account_number, 0.00)
+        RETURNING id INTO existing_account_id;
+
+        INSERT INTO account_patients (account_id, patient_id)
+        VALUES (existing_account_id, NEW.id);
+
+        RAISE NOTICE 'Created new account % for patient % (%) - no matching medical aid found',
+            new_account_number, NEW.first_name, NEW.id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- 4. Practitioners
 CREATE TABLE practitioners (
