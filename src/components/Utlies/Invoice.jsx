@@ -16,6 +16,7 @@ import SalesModal from "../BillingModal/SalesModal";
 import DocumentModal from "../BillingModal/DocumentModal";
 
 // ⚙️ Utils
+import { saveInvoice } from "./Helpers/HelperFunctions";
 import { BILLING_SERVICES, DUMMY_TARIFFS, blankRow } from "../utils/billingUtils";
 
 export default function Invoice({ mode = "invoice", onSave, initialData }) {
@@ -32,8 +33,8 @@ export default function Invoice({ mode = "invoice", onSave, initialData }) {
 
   const [billingRows, setBillingRows] = useState(initialData?.rows || [blankRow()]);
   const [manualService, setManualService] = useState("");
-  const [discountService, setDiscountService] = useState(0);
-  const [manualPrice, setManualPrice] = useState(0);
+  const [discountService, setDiscountService] = useState("");
+  const [manualPrice, setManualPrice] = useState("");
 
   const [userData, setUserData] = useState({
     logo: null,
@@ -86,6 +87,23 @@ export default function Invoice({ mode = "invoice", onSave, initialData }) {
     if (onSave) onSave(data);
     alert(`${isQuoteMode ? "Quote" : "Invoice"} saved successfully!`);
   };
+
+const generateInvoice = async () => {
+  try {
+    const res = await saveInvoice(userData.company, selectedClient, billingRows, userData);
+
+    if (res.success && res.document_number) {
+      alert(`Invoice ${res.document_number} saved successfully!`);
+      setShowDocument(true); // ✅ open modal only if invoice is saved
+    } else {
+      alert("Failed to save invoice.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Failed to save invoice.");
+  }
+};
+
 
   const handleConvertQuote = () => {
     alert("Quote converted to invoice successfully!");
@@ -170,10 +188,12 @@ export default function Invoice({ mode = "invoice", onSave, initialData }) {
           {/* Totals */}
           <div className="bg-gray-50 p-4 rounded-xl shadow-sm">
             <BillingSummary
+              billingRows={billingRows}
+              selectedClient={selectedClient}
+              userData={userData}
               totalVAt={totalVAt}
               totalBilling={totalBilling}
-              setShowInvoice={setShowDocument}
-              isQuoteMode={isQuoteMode}
+              generateInvoice={generateInvoice}
             />
           </div>
         </div>

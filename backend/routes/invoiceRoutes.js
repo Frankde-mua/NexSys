@@ -10,6 +10,7 @@ const router = express.Router();
 
 router.post("/:company", async (req, res) => {
   const { company } = req.params;
+  console.log("your company name:", company);
   const pool = getCompanyPool(company);
   await createTransaction("INV", req, res, pool);
 });
