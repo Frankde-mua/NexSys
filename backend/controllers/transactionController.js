@@ -41,7 +41,7 @@ export const createTransaction = async (type, req, res, pool) => {
 
     // 2️⃣ Get next sequence number for this prefix
     const seqName = `${prefix.toLowerCase()}_number_seq`;
-    const seqRes = await client.query(`SELECT nextval($1) AS seq`, [seqName]);
+    const seqRes = await client.query(`SELECT nextval('${seqName}') AS seq`);
     const nextSeq = seqRes.rows[0].seq;
     const document_number = `${prefix}-${String(nextSeq).padStart(5, "0")}`;
 
