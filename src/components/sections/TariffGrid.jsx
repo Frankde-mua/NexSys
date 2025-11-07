@@ -125,24 +125,24 @@ export default function TariffGrid({
                   {/* Stock button */}
                   <td className="p-2">
                     <div className="flex gap-2 items-center">
-                    <button className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">
-                      ...
-                    </button>
-                        <input
-                      type="text"
-                      value={r.stock_input || ""}
-                      onChange={(e) =>
-                        updateRow(r.id, { stock_input: e.target.value })
-                      }
-                      className="border rounded p-1 text-xs w-full"
-                     
-                    />
+                      <button className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">
+                        ...
+                      </button>
+                      <input
+                        type="text"
+                        value={r.stock_input || ""}
+                        onChange={(e) =>
+                          updateRow(r.id, { stock_input: e.target.value })
+                        }
+                        className="border rounded p-1 text-xs w-full"
+
+                      />
                     </div>
                   </td>
 
                   {/* Stock input field */}
                   <td className="p-2">
-                    
+
                   </td>
 
                   {/* Qty */}
@@ -199,20 +199,20 @@ export default function TariffGrid({
                   </td>
 
                   {/* Patient Portion */}
-<td className="p-2">
-  <input
-    type="number"
-    value={r.discount ? Number(r.fee) - (Number(r.fee) * (Number(r.discount) / 100))
-        : Number(r.patient_portion) || Number(r.fee) || 0
-    }
-    onChange={(e) => {
-      updateRow(r.id, {patient_portion: Number(e.target.value || 0) });
-      console.log(patient_portion);
-    }}
-    className="border rounded p-1 text-xs w-full text-center"
-    min="0"
-  />
-</td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      value={r.discount ? Number(r.fee) - (Number(r.fee) * (Number(r.discount) / 100))
+                        : Number(r.patient_portion) || Number(r.fee) || 0
+                      }
+                      onChange={(e) => {
+                        updateRow(r.id, { patient_portion: Number(e.target.value || 0) });
+                        console.log(patient_portion);
+                      }}
+                      className="border rounded p-1 text-xs w-full text-center"
+                      min="0"
+                    />
+                  </td>
 
 
                   {/* Medical Aid Portion */}

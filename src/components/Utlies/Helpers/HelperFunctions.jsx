@@ -239,7 +239,7 @@ export const deleteAgenda = async (id, setEvents) => {
   }
 };
 
-export const saveInvoice = async (company, selectedClient, billingRows, userData) => {
+export const saveInvoice = async (company, selectedClient, billingRows) => {
   if (!selectedClient) throw new Error("Please select a patient before saving the invoice.");
   if (!billingRows || billingRows.length === 0) throw new Error("No billing lines to save.");
 
@@ -260,17 +260,13 @@ export const saveInvoice = async (company, selectedClient, billingRows, userData
       Number(r.fee) - (Number(r.fee) * (Number(r.discount) / 100)) 
       : Number(r.fee) || 0,
       medical_portion: Number(r.medical_portion) || 0,
-      debit: Number(r.discount) ? 
-      Number(r.fee) - (Number(r.fee) * (Number(r.discount) / 100)) 
-      : Number(r.fee) || 0,
+      debit: Number(r.discount) ? Number(r.fee) - (Number(r.fee) * (Number(r.discount) / 100)) : Number(r.fee) || 0,
       credit: 0,
       balance: Number(r.fee), // optional but safer 
-      date: new Date(),
-    })),
-  };
+}))
+  }
 
-  const res = await axios.post(`http://localhost:5000/api/invoices/${company}`,payload);
+ const res = await axios.post(`http://localhost:5000/api/invoices/${company}`, payload);
   return res.data; // { success: true, document_number: 'INV-00012' }
- //return {success: true, document_number: 'INV-00012'};
-};
-
+ 
+}
