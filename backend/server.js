@@ -67,6 +67,6 @@ app.use("/api/reports/expense-report", expenseReport);
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  await createDatabaseIfNotExists("nexsys");
-  await seedDefaultUsers();
+  // await createDatabaseIfNotExists("nexsys");
+  // await seedDefaultUsers();
 });

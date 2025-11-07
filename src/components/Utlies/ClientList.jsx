@@ -1,6 +1,7 @@
-import React, { useRef, useState, useMemo } from "react";
+import React, { useRef, useState, useMemo, useEffect } from "react";
 import { AgGridReact } from "ag-grid-react";
 // import Loader from "./Utlies/Loader";
+import { getAllClients } from "./Helpers/HelperFunctions";
 
 import {
   AllCommunityModule,
@@ -11,7 +12,7 @@ import {
   iconSetQuartzLight,
 } from "ag-grid-community";
 import { RowNumbersModule } from "ag-grid-enterprise";
-import { CLIENTS } from "../../data/clients";
+// import { CLIENTS } from "../../data/clients";
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -35,12 +36,22 @@ const myTheme = themeQuartz.withParams({
 
 export default function ClientList({ onSelect }) {
   const theme = useMemo(() => myTheme, []);
-  const [rowData, setRowData] = useState(CLIENTS);
+  const [rowData, setRowData] = useState("");
   const [selectedClient, setSelectedClient] = useState(null);
   const gridRef = useRef();
 
+   useEffect(() => {
+      const fetchData = async () => {
+        setRowData(await getAllClients());
+      };
+      fetchData();
+    }, []);
+
+    // console.log("client data from back", rowData);
+
   const columnDefs = useMemo(
     () => [
+      { field: "accountID", headerName: " ID", sortable: true, filter: true },
       { field: "name", headerName: "Name", sortable: true, filter: true },
       { field: "surname", headerName: "Surname", sortable: true, filter: true },
       { field: "type", headerName: "Client Type", sortable: true, filter: true },
@@ -77,7 +88,7 @@ export default function ClientList({ onSelect }) {
             defaultColDef={defaultColDef}
             animateRows={true}
             sideBar={true}
-            rowNumbers={true}
+            rowNumbers={false}
             theme={theme}
             headerHeight={50}
             rowHeight={35}

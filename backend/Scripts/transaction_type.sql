@@ -57,6 +57,12 @@ CREATE TABLE accounts (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE account_patients (
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+    patient_id INTEGER REFERENCES patients(id) ON DELETE CASCADE,
+    PRIMARY KEY (account_id, patient_id)
+);
+
 CREATE SEQUENCE account_number_seq START 1;
 CREATE OR REPLACE FUNCTION generate_account_number()
 RETURNS TRIGGER AS $$
@@ -79,6 +85,55 @@ CREATE TRIGGER trg_generate_account_number
 BEFORE INSERT ON accounts
 FOR EACH ROW
 EXECUTE FUNCTION generate_account_number();
+
+CREATE OR REPLACE FUNCTION link_or_create_account_by_medical_aid()
+RETURNS TRIGGER AS $$
+DECLARE
+    existing_account_id INTEGER;
+    new_account_number VARCHAR(10);
+BEGIN
+    -- 1️⃣ Try to find existing account for the same medical aid number
+    IF NEW.medical_aid_no IS NOT NULL THEN
+        SELECT a.id INTO existing_account_id
+        FROM accounts a
+        JOIN account_patients ap ON ap.account_id = a.id
+        JOIN patients p ON p.id = ap.patient_id
+        WHERE p.medical_aid_no = NEW.medical_aid_no
+        LIMIT 1;
+    END IF;
+
+    -- 2️⃣ If found, link new patient to that account
+    IF existing_account_id IS NOT NULL THEN
+        INSERT INTO account_patients (account_id, patient_id)
+        VALUES (existing_account_id, NEW.id);
+        RAISE NOTICE 'Linked patient % (%) to existing account % (via medical aid no %)',
+            NEW.first_name, NEW.id, existing_account_id, NEW.medical_aid_no;
+
+    -- 3️⃣ Otherwise, create a new account and link it
+    ELSE
+        new_account_number := 'ACC' || LPAD(NEXTVAL('patient_key_seq')::TEXT, 5, '0');
+
+        INSERT INTO accounts (patient_id, account_number, current_balance)
+        VALUES (NEW.id, new_account_number, 0.00)
+        RETURNING id INTO existing_account_id;
+
+        INSERT INTO account_patients (account_id, patient_id)
+        VALUES (existing_account_id, NEW.id);
+
+        RAISE NOTICE 'Created new account % for patient % (%) - no matching medical aid found',
+            new_account_number, NEW.first_name, NEW.id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- trigger for create patient
+CREATE TRIGGER trg_link_or_create_account_by_medical_aid
+AFTER INSERT ON patients
+FOR EACH ROW
+EXECUTE FUNCTION link_or_create_account_by_medical_aid();
+
 
 -- 4. Practitioners
 CREATE TABLE practitioners (
@@ -392,3 +447,10 @@ $$ LANGUAGE plpgsql;
 
 -- Example query to retrieve statement for a specific statement number
 -- SELECT * FROM v_patient_statement_period WHERE statement_number = 'STM-00003';
+
+INSERT INTO medical_aids (id, name, code, contact_person, phone, email)
+VALUES
+(1, 'Bonitas', 'BON', 'Samantha Khumalo', '0114567890', 'info@bonitas.co.za'),
+(2, 'Discovery Health', 'DISC', 'Johan Meyer', '0112345678', 'support@discovery.co.za'),
+(3, 'Medihelp', 'MED', 'Rene Williams', '0123456789', 'enquiries@medihelp.co.za'),
+(4, 'Hosmed', 'HOS', 'Lerato Molefe', '0105551212', 'client@hosmed.co.za');

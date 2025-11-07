@@ -21,12 +21,44 @@ export const getAllStatus = async () => {
   }
 };
 
+// --- Fetch all clients ---
+export const getAllClients = async () => {
+  const companyName = getCompanyName();
+  //https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}
+  try {
+    const res = await axios.get(`http://localhost:5000/api/patients/${companyName}`,
+      { headers: { "ngrok-skip-browser-warning": "true" } }
+    );
+    const dbClients = res.data.patients.map((e) => ({
+      id: e.id,
+      accountID: e.account_id,
+      name: e.name,
+      surname: e.surname, 
+      type: e.type || "Med Aid",
+      cell: e.phone,
+      email: e.email,
+      address: e.address,
+      banking: e.bank || {
+      bank: "FNB",
+      accountNumber: e.accountno,
+      branchCode: "250655"
+    }
+    }));
+
+
+    return dbClients || [];
+  } catch (err) {
+    console.error("Error fetching patients:", err);
+    return [];
+  }
+};
+
 // --- Fetch all agendas ---
 export const getAllAgendas = async () => {
   const companyName = getCompanyName();
   //https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}
   try {
-    const res = await axios.get(`http://localhost:5000/api/calendar/${companyName}`,
+    const res = await axios.get(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
 
@@ -55,7 +87,7 @@ export const saveNewStatus = async (newStatus, setStatuses, setLoading) => {
     if (!newStatus.trim()) return alert("Enter a status description");
     setLoading(true);
     try {
-      const res = await axios.post(`http://localhost:5000/api/status/${companyName}`,
+      const res = await axios.post(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}`,
         { status_desc: newStatus },
         { headers: { "ngrok-skip-browser-warning": "true" } }
       );
@@ -84,7 +116,7 @@ export const saveNewAgenda = async (
   setLoading(true);
   // `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}
   try {
-    const res = await axios.post(`http://localhost:5000/api/calendar/${companyName}`,
+    const res = await axios.post(`https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}`,
       {
         agenda: newAgenda.title,
         time: newAgenda.time,
@@ -143,7 +175,7 @@ export const updateAgenda = async (
     const { client, client_id, ...agendaData } = newAgenda;
 
     const res = await axios.put(
-      `http://localhost:5000/api/calendar/${companyName}/${editingEventId}`,
+      `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}/${editingEventId}`,
       { ...agendaData, date: agendaDate }
     );
     if (res.data.success) {
@@ -176,7 +208,7 @@ export const deleteStatus = async (statusId, statusDesc, setStatuses) => {
   const companyName = getCompanyName();
   try {
     const res = await axios.delete(
-      `http://localhost:5000/api/status/${companyName}/${statusId}`,
+      `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/status/${companyName}/${statusId}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
 
@@ -198,7 +230,7 @@ export const deleteAgenda = async (id, setEvents) => {
 
   try {
     await axios.delete(
-      `http://localhost:5000/api/calendar/${companyName}/${id}`,
+      `https://franklin-unsprinkled-corrie.ngrok-free.dev/api/calendar/${companyName}/${id}`,
       { headers: { "ngrok-skip-browser-warning": "true" } }
     );
     setEvents((ev) => ev.filter((e) => e.id !== id));
@@ -211,9 +243,10 @@ export const saveInvoice = async (company, selectedClient, billingRows, userData
   if (!selectedClient) throw new Error("Please select a patient before saving the invoice.");
   if (!billingRows || billingRows.length === 0) throw new Error("No billing lines to save.");
 
+  console.log(billingRows);
   const payload = {
     patient_id: selectedClient.id,
-    account_id: selectedClient.account_id || null,
+    account_id: selectedClient.accountID || null,
     practitioner_id: selectedClient.practitioner_id || null,
     transaction_type_id: 1, // 1 = Invoice, from transaction_types table
 
@@ -223,16 +256,21 @@ export const saveInvoice = async (company, selectedClient, billingRows, userData
       qty: Number(r.qty) || 1,
       fee: Number(r.fee) || 0,
       discount: Number(r.discount) || 0,
-      patient_portion: Number(r.patient_portion) || 0,
+      patient_portion: Number(r.discount) ? 
+      Number(r.fee) - (Number(r.fee) * (Number(r.discount) / 100)) 
+      : Number(r.fee) || 0,
       medical_portion: Number(r.medical_portion) || 0,
-      debit: Number(r.fee) || 0,
+      debit: Number(r.discount) ? 
+      Number(r.fee) - (Number(r.fee) * (Number(r.discount) / 100)) 
+      : Number(r.fee) || 0,
       credit: 0,
-      balance: 0, // optional but safer
+      balance: Number(r.fee), // optional but safer 
       date: new Date(),
     })),
   };
 
-  const res = await axios.post(`http://localhost:5000/api/invoices/${company}`, payload);
+  const res = await axios.post(`http://localhost:5000/api/invoices/${company}`,payload);
   return res.data; // { success: true, document_number: 'INV-00012' }
+ //return {success: true, document_number: 'INV-00012'};
 };
 
