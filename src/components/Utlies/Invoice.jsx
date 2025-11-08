@@ -74,9 +74,9 @@ export default function Invoice({ mode = "invoice", onSave, initialData }) {
   const selectTariffToRow = (tariff) => {
     if (!tariffModalTargetRowId) return;
     updateRow(tariffModalTargetRowId, {
-      tariff: tariff.desc,
-      tariffCode: tariff.code,
-      fee: tariff.fee,
+      tariff: tariff.description,
+      code: tariff.code,
+      fee: tariff.standard_fee,
     });
     setShowTariffModal(false);
     setTariffModalTargetRowId(null);
@@ -206,7 +206,6 @@ const generateInvoice = async () => {
         <TariffWizardModal
           setShowTariffModal={setShowTariffModal}
           selectTariffToRow={selectTariffToRow}
-          DUMMY_TARIFFS={DUMMY_TARIFFS}
         />
       )}
 

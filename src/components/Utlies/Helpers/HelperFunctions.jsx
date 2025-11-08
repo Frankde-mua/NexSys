@@ -81,6 +81,26 @@ export const getAllAgendas = async () => {
   }
 };
 
+// get all tariffs
+export const getAllTariffs = async (page, limit) => {
+  const companyName = getCompanyName();
+  try {
+    const res = await axios.get(
+      `http://localhost:5000/api/tariff-optom/all-tariffs/${companyName}?page=${page}&limit=${limit}`,
+      { headers: { "ngrok-skip-browser-warning": "true" } }
+    );
+
+    // Response structure from your Express route
+    return {
+      tariffs: res.data.tariffs || [],
+      pagination: res.data.pagination || {},
+    };
+  } catch (err) {
+    console.error("Error fetching tariffs:", err);
+    return { tariffs: [], pagination: {} };
+  }
+};
+
 // --- Save new status ---
 export const saveNewStatus = async (newStatus, setStatuses, setLoading) => {
     const companyName = getCompanyName();

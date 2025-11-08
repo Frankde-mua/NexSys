@@ -18,6 +18,7 @@ import creditNoteRoutes from "./routes/creditNoteRoutes.js";
 import quoteRoutes from "./routes/quoteRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import journalRoutes from "./routes/journalRoutes.js";
+import tariffsRoutes from "./routes/tariffsRoutes.js"
 
 import ageAnalysis from "./routes/reports/ageAnalysis.js";
 import allocationsList from "./routes/reports/allocationsList.js";
@@ -52,6 +53,7 @@ app.use("/api/credit-notes", creditNoteRoutes);
 app.use("/api/quotes", quoteRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/journals", journalRoutes);
+app.use("/api/tariff-optom", tariffsRoutes);
 
 // Report routes
 app.use("/api/reports/age-analysis", ageAnalysis);
@@ -67,6 +69,6 @@ app.use("/api/reports/expense-report", expenseReport);
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  // await createDatabaseIfNotExists("nexsys");
-  // await seedDefaultUsers();
+  await createDatabaseIfNotExists("nexsys");
+  await seedDefaultUsers();
 });
