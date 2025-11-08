@@ -57,14 +57,33 @@ export default function Invoice({ mode = "invoice", onSave, initialData }) {
 
   const handleAddManual = () => {
     if (!manualService || !manualPrice) return;
-    setBillingRows((prev) => [
-      ...prev,
-      { ...blankRow(), tariff: manualService, fee: Number(manualPrice), discount: Number(discountService) },
-    ]);
+
+    setBillingRows((prev) => {
+      // find first empty row (no code and no tariff)
+      const emptyIndex = prev.findIndex((r) => !r.code && !r.tariff);
+      const newRow = {
+        ...blankRow(),
+        tariff: manualService,
+        fee: Number(manualPrice),
+        discount: Number(discountService),
+      };
+
+      if (emptyIndex !== -1) {
+        // populate first empty row
+        const updated = [...prev];
+        updated[emptyIndex] = { ...updated[emptyIndex], ...newRow };
+        return updated;
+      } else {
+        // otherwise append new
+        return [...prev, newRow];
+      }
+    });
+
     setManualService("");
     setManualPrice("");
     setDiscountService("");
   };
+
 
   const handleSelectClient = (client) => {
     setSelectedClient(client);
@@ -88,21 +107,21 @@ export default function Invoice({ mode = "invoice", onSave, initialData }) {
     alert(`${isQuoteMode ? "Quote" : "Invoice"} saved successfully!`);
   };
 
-const generateInvoice = async () => {
-  try {
-    const res = await saveInvoice(userData.company, selectedClient, billingRows, userData);
+  const generateInvoice = async () => {
+    try {
+      const res = await saveInvoice(userData.company, selectedClient, billingRows, userData);
 
-    if (res.success && res.document_number) {
-      alert(`Invoice ${res.document_number} saved successfully!`);
-      setShowDocument(true); // ✅ open modal only if invoice is saved
-    } else {
-      alert("Failed to save invoice.");
+      if (res.success && res.document_number) {
+        alert(`Invoice ${res.document_number} saved successfully!`);
+        setShowDocument(true); // ✅ open modal only if invoice is saved
+      } else {
+        alert("Failed to save invoice.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to save invoice.");
     }
-  } catch (err) {
-    console.error(err);
-    alert(err.message || "Failed to save invoice.");
-  }
-};
+  };
 
 
   const handleConvertQuote = () => {
@@ -167,6 +186,7 @@ const generateInvoice = async () => {
               setDiscountService={setDiscountService}
               setManualPrice={setManualPrice}
               handleAddManual={handleAddManual}
+              setBillingRows={setBillingRows}
             />
           </div>
 

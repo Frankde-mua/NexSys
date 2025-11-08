@@ -1,4 +1,3 @@
-// sections/ManualAddSection.jsx
 import React from "react";
 
 export default function ManualAddSection({
@@ -44,13 +43,16 @@ export default function ManualAddSection({
         </button>
         <div className="ml-auto flex gap-2">
           <button
-            onClick={() => setBillingRows((r) => (r.length ? r.slice(0, -1) : r))}
+            onClick={() =>
+              setBillingRows?.((rows) => (rows.length > 1 ? rows.slice(0, -1) : [rows[0]]))
+            }
             className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
             title="Remove last row"
           >
             Remove Last
           </button>
         </div>
+
       </div>
     </div>
   );
