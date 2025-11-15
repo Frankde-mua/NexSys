@@ -19,11 +19,10 @@ import DocumentModal from "../BillingModal/DocumentModal";
 import { saveInvoice } from "./Helpers/HelperFunctions";
 import { BILLING_SERVICES, DUMMY_TARIFFS, blankRow } from "../utils/billingUtils";
 
-export default function Invoice({ mode = "invoice", onSave, initialData }) {
+export default function Invoice({ selectedClient, setSelectedClient, mode = "invoice", onSave, initialData }) {
   const isQuoteMode = mode === "quote";
 
   // ===== STATE =====
-  const [selectedClient, setSelectedClient] = useState(initialData?.client || null);
   const [showClients, setShowClients] = useState(false);
   const [showDocument, setShowDocument] = useState(false);
   const [showTariffModal, setShowTariffModal] = useState(false);
