@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import pkg from "pg";
 import { usersToSeed } from "./data.js"
+import { registerSessionRoutes } from "./sessions.js";
 import bodyParser from "body-parser";
 // import your other stuff like getCompanyPool etc.
 
@@ -11,7 +12,7 @@ const { Pool } = pkg;
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "5mb" })); // sessions carry long transcripts
 app.use(cors());
 
 // app.use(
@@ -290,16 +291,23 @@ app.get("/api/superadmin/companies", async (req, res) => {
 // ✅ Expenditure / Expense Category API
 // ---------------------
 // Helper: get company pool
+const companyPools = new Map();
 const getCompanyPool = (companyName) => {
   const dbName = `company_${companyName.toLowerCase().replace(/\s+/g, "_")}`;
-  return new Pool({
-    user: process.env.PG_USER,
-    host: process.env.PG_HOST,
-    database: dbName,
-    password: process.env.PG_PASSWORD,
-    port: process.env.PG_PORT,
-    ssl: { rejectUnauthorized: false },
-  });
+  if (!companyPools.has(dbName)) {
+    companyPools.set(
+      dbName,
+      new Pool({
+        user: process.env.PG_USER,
+        host: process.env.PG_HOST,
+        database: dbName,
+        password: process.env.PG_PASSWORD,
+        port: process.env.PG_PORT,
+        ssl: { rejectUnauthorized: false },
+      })
+    );
+  }
+  return companyPools.get(dbName);
 };
 
 // Get all expense categories for a company
@@ -639,11 +647,16 @@ app.get("/api/search-clients/:company", async (req, res) => {
 });
 
 // ---------------------
+// ✅ Session (AI scribe) API - see sessions.js
+// ---------------------
+registerSessionRoutes(app, { nexsysPool, getCompanyPool });
+
+// ---------------------
 // ✅ Start Server
 // ---------------------
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   await createDatabaseIfNotExists("nexsys");
   await seedDefaultUsers();
-  res.send("NexSys API is running successfully 🚀");
+  console.log("NexSys API is running successfully 🚀");
 });

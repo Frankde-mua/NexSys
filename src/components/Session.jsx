@@ -4,8 +4,9 @@ import { Mic, Square, Trash2 } from "lucide-react";
 import { CLIENTS } from "../data/clients";
 import {
   SESSION_TTL_MS,
-  loadSessions,
-  saveSessions,
+  fetchSessions,
+  saveSession,
+  removeSession,
   purgeExpired,
 } from "../helpers/sessionStore";
 
@@ -52,7 +53,8 @@ const basicNotes = (s) => {
 export default function Session({ user, onCreateInvoice }) {
   const isAdmin = (user?.role || "").toLowerCase() === "admin";
 
-  const [sessions, setSessions] = useState(() => loadSessions(user));
+  const [sessions, setSessions] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [recordingId, setRecordingId] = useState(null);
   const [interim, setInterim] = useState("");
@@ -68,11 +70,70 @@ export default function Session({ user, onCreateInvoice }) {
   const recordingIdRef = useRef(null);
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
+  const dirtyRef = useRef(new Set()); // session ids waiting to be saved
+  const flushingRef = useRef(false);
 
-  // Autosave every change (also protects a long session if the user is logged out).
+  // Load this user's sessions from the server.
   useEffect(() => {
-    saveSessions(user, sessions);
-  }, [sessions, user]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await fetchSessions(user);
+        if (cancelled) return;
+        // Anything still "recording" on the server was interrupted
+        // (tab closed, logout, reload) - close it at its last activity.
+        const fixed = list.map((s) => {
+          if (s.status !== "recording") return s;
+          dirtyRef.current.add(s.id);
+          const end = s.lastActivityAt || s.startedAt;
+          return { ...s, status: "ended", endedAt: end, expiresAt: end + SESSION_TTL_MS };
+        });
+        setSessions((prev) => {
+          const have = new Set(prev.map((p) => p.id));
+          return [...prev, ...fixed.filter((s) => !have.has(s.id))];
+        });
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setError("Could not load saved sessions from the server.");
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave: every few seconds, send changed sessions to the server.
+  // Failed saves stay queued and are retried on the next tick.
+  useEffect(() => {
+    const flush = async () => {
+      if (flushingRef.current) return;
+      flushingRef.current = true;
+      try {
+        for (const id of [...dirtyRef.current]) {
+          const s = sessionsRef.current.find((x) => x.id === id);
+          dirtyRef.current.delete(id);
+          if (!s) continue;
+          try {
+            await saveSession(user, s);
+          } catch (err) {
+            console.error("Session autosave failed:", err);
+            dirtyRef.current.add(id);
+          }
+        }
+      } finally {
+        flushingRef.current = false;
+      }
+    };
+    const t = setInterval(flush, 3000);
+    return () => {
+      clearInterval(t);
+      flush(); // final save on logout / unmount
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clock for the elapsed timer.
   useEffect(() => {
@@ -104,12 +165,15 @@ export default function Session({ user, onCreateInvoice }) {
     localStorage.setItem("nexsys_hourly_rate", rate);
   }, [rate]);
 
-  const updateSession = (id, patch) =>
+  const updateSession = (id, patch) => {
+    dirtyRef.current.add(id);
     setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
 
   const appendTranscript = (text) => {
     const id = recordingIdRef.current;
     if (!id) return;
+    dirtyRef.current.add(id);
     setSessions((prev) =>
       prev.map((s) =>
         s.id === id
@@ -166,8 +230,8 @@ export default function Session({ user, onCreateInvoice }) {
   const startSession = () => {
     if (!SpeechRecognition || recordingIdRef.current) return;
     setError("");
-    const id = String(Date.now());
     const started = Date.now();
+    const id = `${started}-${Math.random().toString(36).slice(2, 8)}`;
     const client = CLIENTS.find((c) => String(c.id) === clientId) || null;
     const session = {
       id,
@@ -181,6 +245,7 @@ export default function Session({ user, onCreateInvoice }) {
       notes: "",
       invoiced: false,
     };
+    dirtyRef.current.add(id);
     setSessions((prev) => [session, ...prev]);
     setSelectedId(id);
     recordingIdRef.current = id;
@@ -220,6 +285,8 @@ export default function Session({ user, onCreateInvoice }) {
         {
           transcript: s.transcript,
           clientName: s.client ? `${s.client.name} ${s.client.surname}` : "",
+          username: user.username,
+          company: user.company_name || user.company,
         },
         { timeout: 60000 }
       );
@@ -243,7 +310,12 @@ export default function Session({ user, onCreateInvoice }) {
     if (id === recordingId) return;
     if (!window.confirm("Delete this session? This cannot be undone.")) return;
     setSessions((prev) => prev.filter((s) => s.id !== id));
+    dirtyRef.current.delete(id);
     if (selectedId === id) setSelectedId(null);
+    removeSession(user, id).catch((err) => {
+      console.error(err);
+      setError("Could not delete the session on the server. It may reappear on reload.");
+    });
   };
 
   const createInvoice = (s) => {
@@ -411,7 +483,9 @@ export default function Session({ user, onCreateInvoice }) {
       {/* Recent sessions */}
       <div className="bg-white p-4 rounded-2xl shadow-sm">
         <h2 className="text-sm font-semibold mb-3">Recent sessions (last 24 hours)</h2>
-        {sessions.length === 0 ? (
+        {!loaded ? (
+          <p className="text-sm text-slate-500">Loading sessions...</p>
+        ) : sessions.length === 0 ? (
           <p className="text-sm text-slate-500">No sessions yet.</p>
         ) : (
           <ul className="divide-y">
