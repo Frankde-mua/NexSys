@@ -1,0 +1,25 @@
+{
+  "name": "react-dashboard-template",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ag-grid-community/theming": "^32.3.9",
+    "ag-grid-community": "^34.2.0",
+    "ag-grid-enterprise": "^34.2.0",
+    "ag-grid-react": "^34.2.0",
+    "axios": "^1.12.2",
+    "framer-motion": "^7.6.6",
+    "lucide-react": "^0.545.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.5.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

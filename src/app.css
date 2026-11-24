@@ -1,0 +1,9 @@
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.ag-side-button.ag-selected {
+    text-shadow: 0 0 8px #039;
+    font-weight: 500;
+}
