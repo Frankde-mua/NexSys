@@ -3,7 +3,6 @@
 Quick starter React project (Vite) with a single-page dashboard that includes:
 - Reports page (charts & metrics)
 - Calendar page (month view + agenda)
-- AI agent that converts doctors notes for ready use invoice 
 - Billing page (quick service selector and summary)
 - Expense - Keep track of all your expenses
 - Inventory page helps keep track of your inventory - export or import data
