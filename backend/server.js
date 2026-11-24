@@ -645,4 +645,5 @@ app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   await createDatabaseIfNotExists("nexsys");
   await seedDefaultUsers();
+  res.send("NexSys API is running successfully 🚀");
 });
