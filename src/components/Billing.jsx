@@ -8,7 +8,7 @@ const BILLING_SERVICES = [
   { id: 4, name: "Social Media Management", price: 400 },
 ];
 
-const Billing = () => {
+const Billing = ({ draft, onDraftConsumed }) => {
   const [selectedServices, setSelectedServices] = useState([]);
   const [manualService, setManualService] = useState("");
   const [discountService, setDiscountService] = useState("");
@@ -31,6 +31,21 @@ const Billing = () => {
         const client = JSON.parse(localStorage.getItem("selectedClient"));
         if (client) setSelectedClient(client);
     }, [showClients]); // recheck when modal closes
+
+  // 🟢 Pre-fill from a Session "Quick invoice" hand-off
+  useEffect(() => {
+    if (!draft) return;
+    if (draft.client) {
+      setSelectedClient(draft.client);
+      localStorage.setItem("selectedClient", JSON.stringify(draft.client));
+    } else {
+      setSelectedClient(null);
+      localStorage.removeItem("selectedClient");
+    }
+    setSelectedServices([]);
+    setManualList(draft.items || []);
+    onDraftConsumed?.();
+  }, [draft]);
 
   const toggleService = (id) => {
     setSelectedServices((prev) =>
@@ -134,9 +149,9 @@ const Billing = () => {
 
         {selectedClient && (
             <div className="mt-3 text-xs text-slate-500">
-            <p><strong>Cell:</strong> {selectedClient.cell}</p>
-            <p><strong>Type:</strong> {selectedClient.type}</p>
-            <p><strong>Address:</strong> {selectedClient.address}</p>
+            <p><strong>Cell:</strong> {selectedClient?.cell}</p>
+            <p><strong>Type:</strong> {selectedClient?.type}</p>
+            <p><strong>Address:</strong> {selectedClient?.address}</p>
             </div>
         )}
         </div>
@@ -286,11 +301,11 @@ const Billing = () => {
             <p><strong>Invoice no:</strong> #00001</p>
             </div>
             <div className="mt-3 text-xs text-slate-500">
-            <p><strong>Name:</strong> {selectedClient.name}</p>
-            <p><strong>Surname:</strong> {selectedClient.surname}</p>
-            <p><strong>Cell:</strong> {selectedClient.cell}</p>
-            <p><strong>Type:</strong> {selectedClient.type}</p>
-            <p><strong>Address:</strong> {selectedClient.address}</p>
+            <p><strong>Name:</strong> {selectedClient?.name}</p>
+            <p><strong>Surname:</strong> {selectedClient?.surname}</p>
+            <p><strong>Cell:</strong> {selectedClient?.cell}</p>
+            <p><strong>Type:</strong> {selectedClient?.type}</p>
+            <p><strong>Address:</strong> {selectedClient?.address}</p>
             </div>
             <br />
             <table className="w-full text-sm border-t">

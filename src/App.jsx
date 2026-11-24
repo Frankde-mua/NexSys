@@ -20,6 +20,7 @@ import ClientGrid from "./components/Customers";
 import renderInventory from "./components/Inventory";
 import Profile from "./components/Profile";
 import Expenditure from "./components/Expenditure";
+import Session from "./components/Session";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import {
   startOfMonth,
@@ -41,6 +42,7 @@ export default function App() {
   const [loaderLabel, setLoaderLabel] = useState("NexSys");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [invoiceDraft, setInvoiceDraft] = useState(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -87,6 +89,7 @@ export default function App() {
       ["dashboard", "Dashboard"],
       ["users", "Users"],
       ["calendar", "Calendar"],
+      ["session", "Session"],
       ["billing", "Billing"],
       ["inventory", "Inventory"],
       ["expense", "Expense"],
@@ -96,6 +99,7 @@ export default function App() {
     user: [
       ["dashboard", "Dashboard"],
       ["calendar", "Calendar"],
+      ["session", "Session"],
       ["billing", "Billing"],
       ["customer", "Customer"],
       ["profile", "Profile"],
@@ -104,6 +108,14 @@ export default function App() {
 
   const role = user.role?.toLowerCase() || "user";
   const navList = NAV_ITEMS[role] || NAV_ITEMS.user;
+
+  // Session -> Billing hand-off: Billing opens pre-filled with the draft.
+  const handleCreateInvoice = (draft) => {
+    setInvoiceDraft(draft);
+    setLoading(true);
+    setCurrentPage("billing");
+    setTimeout(() => setLoading(false), 1500);
+  };
 
   const renderDashboard = () => (
     <div>
@@ -259,7 +271,19 @@ export default function App() {
               formatISO={formatISO}
             />
           )}
-          {currentPage === "billing" && <Billing />}
+          {/* Session stays mounted (just hidden) so a live recording keeps
+              running while the user visits other pages. */}
+          {role !== "superadmin" && (
+            <div style={{ display: currentPage === "session" ? "block" : "none" }}>
+              <Session user={user} onCreateInvoice={handleCreateInvoice} />
+            </div>
+          )}
+          {currentPage === "billing" && (
+            <Billing
+              draft={invoiceDraft}
+              onDraftConsumed={() => setInvoiceDraft(null)}
+            />
+          )}
           {currentPage === "inventory" && renderInventory({ setLoading })}
           {currentPage === "expense" && <Expenditure />}
           {currentPage === "customer" && <ClientGrid setCurrentPage={setCurrentPage} />}
